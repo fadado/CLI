@@ -1,13 +1,10 @@
 ////////////////////////////////////////////////////////////////////////
-// Template/Example for GNU argp library.
+// Template for CLI programs using the GNU argp library.
 ////////////////////////////////////////////////////////////////////////
 
 #include <argp.h>
 #include <assert.h>
 #include <stdbool.h>
-
-////////////////////////////////////////////////////////////////////////
-// Documentation
 
 #define SUMMARY \
 "argex -- A program to demonstrate how to code command-line\
@@ -15,15 +12,20 @@
 
 #define DESCRIPTION "This is my first argp program."
 
-#define ARGUMENTS	"ARG1 ARG2"
+#define BUG_ADDRESS "<jordinas@gmail.org>"
 
+#define ARGUMENTS	"ARG1 ARG2"
+// or: ...
+
+////////////////////////////////////////////////////////////////////////
+//
 const char *argp_program_version     = "argex 1.0";
 const char *argp_program_bug_address = "<jordinas@gmail.org>";
 
-static char args_doc[]	= ARGUMENTS;
-static char doc[]		= SUMMARY "\v" DESCRIPTION;
+static const char doc[]			= SUMMARY "\v" DESCRIPTION;
+static const char args_doc[]	= ARGUMENTS;	// "\n"...
 
-static struct argp_option options[] = {
+static const struct argp_option options[] = {
 //	 NAME       KEY  ARG        FLAGS DOC
 	{"alpha",   'a', "STRING1", 0,    "Do something with STRING1 related to the letter A"},
 	{"bravo",   'b', "STRING2", 0,    "Do something with STRING2 related to the letter B"},
@@ -35,24 +37,26 @@ static struct argp_option options[] = {
 };
 
 ////////////////////////////////////////////////////////////////////////
-// Parse one parameter and build the struct parameters
+// PARSER-SECTION
 
 //argex [-v?V] [-a STRING1] [-b STRING2] [-o OUTFILE] [--alpha=STRING1]
 //      [--bravo=STRING2] [--output=OUTFILE] [--verbose] [--help] [--usage]
 //      [--version] ARG1 ARG2
-struct parameters {
+
+struct parameters
+{
 	char *command;
 	bool verbose; 	// The -v flag
 	char *alpha; 	// Argument for -a
 	char *bravo;	// Argument for -b
-	char *outfile;  // Argument for -o
+	char *output;   // Argument for -o
 	char *args[2];  // ARG1 and ARG2
 };
 
-static error_t parse_parameter(int key, char *arg, struct argp_state *state)
+static error_t parameter_parse(int key, char *arg, struct argp_state *state)
 {
 	enum { OK=0 };
-	register struct parameters *p = state->input;
+	register struct parameters *p = (struct parameters *)state->input;
 
 	inline void unshift(char *s) {state->argv[--state->next] = s;}
 
@@ -62,8 +66,8 @@ static error_t parse_parameter(int key, char *arg, struct argp_state *state)
 		case ARGP_KEY_INIT:
 			assert(state->name == 0);
 			assert(state->next == 0);
-			// Set command defaults
-			p->outfile = 0;
+			// Set parameters defaults
+			p->output = 0;
 			p->alpha = "";
 			p->bravo = "";
 			p->verbose = false;
@@ -84,8 +88,6 @@ static error_t parse_parameter(int key, char *arg, struct argp_state *state)
 			assert(state->arg_num == 2);
 			return OK;
 
-		//case ARGP_KEY_SUCCESS: return OK;
-
 		case 'h':
 			unshift("--help");
 			return OK;
@@ -103,39 +105,41 @@ static error_t parse_parameter(int key, char *arg, struct argp_state *state)
 			p->bravo = arg;
 			return OK;
 		case 'o':
-			p->outfile = arg;
+			p->output = arg;
 			return OK;
 	}
+	// not reached
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Generic main
+// INTERFACE-SECTION
+
+static int xmain(struct parameters *);
 
 int main(int argc, char **argv)
 {
-	extern int xmain(struct parameters *);
-
-	static struct argp argp = {options, parse_parameter, args_doc, doc};
+	static const struct argp argp = {options, parameter_parse, args_doc, doc};
 	enum { flags = 0 };
 	static int i;
-	static struct parameters pars;
+	static struct parameters parms;
 
-	pars.command = argv[0];
+	parms.command = argv[0];
 
-	if (argp_parse(&argp, argc, argv, flags, &i, &pars)) {
+	if (0!=argp_parse(&argp, argc, argv, flags, &i, &parms)) {
 		return argp_err_exit_status;
 	}
 	assert(i == argc);
-	return xmain(&pars);
+
+	return xmain(&parms);
 }
 
 ////////////////////////////////////////////////////////////////////////
-//
+// PROGRAM-SECTION
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
 
-extern int xmain(struct parameters *p)
+static int xmain(struct parameters *p)
 {
 	FILE *outstream;
 
@@ -155,8 +159,8 @@ extern int xmain(struct parameters *p)
 		"--\"the gunners dream\", Roger Waters, 1983\n";
 
 	// Where do we send output?
-	if (p->outfile) {
-		outstream = fopen(p->outfile, "w");
+	if (p->output) {
+		outstream = fopen(p->output, "w");
 	} else {
 		outstream = stdout;
 	}
