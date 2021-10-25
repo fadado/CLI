@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define NDEBUG
+//#define NDEBUG
 #include <assert.h>
 
 enum {
@@ -23,7 +23,7 @@ void simulate(int iterations)
 
 	// random door: 0 .. DOORS-1
 	enum door choose_door(void) {
-		int d = (enum door)(rand() % DOORS);
+		enum door d = rand() % DOORS;
 		assert(Door1 <= d && d <= Door3);
 		return d;
 	}
@@ -55,6 +55,7 @@ void simulate(int iterations)
 	// change door after Monty offer
 	void change_strategy(enum door contestant) {
 		enum door monty;
+
 		// Monty Hall chooses a door with a goat
 		if (awards[contestant] == CAR) {
 			monty = (contestant > Door1) ? Door1 : Door2;
@@ -68,14 +69,12 @@ void simulate(int iterations)
 		}
 		assert(awards[monty] == GOAT);
 		assert(contestant != monty);
+
 		// the contestant changes door
-		switch (contestant+monty) {
-			default: assert(internal_error);
-			case 1: contestant = Door3; break; // 0+1
-			case 2: contestant = Door2; break; // 0+2
-			case 3: contestant = Door1; break; // 1+2
-		}
+		contestant = (enum door)(3 - (contestant+monty));
+		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
+
 		// a winner?
 		if (awards[contestant] == CAR) {
 			++scores.change; // win!
@@ -93,6 +92,7 @@ void simulate(int iterations)
 		change_strategy(contestant);
 	}
 	assert(scores.change > scores.stay);
+	assert(scores.change + scores.stay == ITERATIONS);
 
 	// report scores
 	printf("Stay strategy won %d times\n", scores.stay);
