@@ -87,7 +87,7 @@ void simulate(int iterations)
 	printf("N = %d\n", iterations);
 
 	// simulate
-	for (int i = 0; i < iterations; i++) {
+	for (int i = 0; i < iterations; ++i) {
 		init_awards();
 		enum door contestant = choose_door();
 		stay_strategy(contestant);
