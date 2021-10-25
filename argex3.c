@@ -1,43 +1,38 @@
-////////////////////////////////////////////////////////////////////////
 // Template for CLI programs using the GNU argp library.
-////////////////////////////////////////////////////////////////////////
 
-#include <argp.h>
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <argp.h>
 
 ////////////////////////////////////////////////////////////////////////
-//
-
-#define SUMMARY \
-"argex -- A program to demonstrate how to code command-line\
- options and arguments."
-
-#define DESCRIPTION "This is my first argp program."
-
-#define BUG_ADDRESS "<jordinas@gmail.org>"
-
-#define ARGUMENTS	"ARG1 ARG2" // TODO: \n ...
-
+// SYSTEM INTERFACE
 ////////////////////////////////////////////////////////////////////////
+
+//
+// PARAMETERS DATA
 //
 
-//argex [-v?V] [-a STRING1] [-b STRING2] [-o OUTFILE] [--alpha=STRING1]
-//      [--bravo=STRING2] [--output=OUTFILE] [--verbose] [--help] [--usage]
-//      [--version] ARG1 ARG2
+/* Parameters encoding in command line
+argex [-v?V] [-a STRING1] [-b STRING2] [-o OUTFILE] [--alpha=STRING1]
+      [--bravo=STRING2] [--output=OUTFILE] [--verbose] [--help] [--usage]
+      [--version] ARG1 ARG2 */
 
-struct parameters
-{
+static struct parameters {
 	char *command;
 	bool verbose; 	// The -v flag
 	char *alpha; 	// Argument for -a
 	char *bravo;	// Argument for -b
 	char *output;   // Argument for -o
 	char *args[2];  // ARG1 and ARG2
-};
+} parameters;
 
-static error_t parameter_parse(int key, char *arg, struct argp_state *state)
+//
+// PARAMETERS PARSER
+//
+
+static error_t
+parameters_parse(int key, char *arg, struct argp_state *state)
 {
 	enum { OK=0 };
 	register struct parameters *p = state->input;
@@ -48,27 +43,23 @@ static error_t parameter_parse(int key, char *arg, struct argp_state *state)
 		default: return ARGP_ERR_UNKNOWN;
 
 		case ARGP_KEY_INIT:
-			assert(state->name == 0);
+			assert(state->name == NULL);
 			assert(state->next == 0);
-			// Set parameters defaults
-			p->output = 0;
-			p->alpha = "";
-			p->bravo = "";
+			// Set defaults
+			assert(p->command != NULL);
+			p->output = NULL;
+			p->alpha = p->bravo = "";
 			p->verbose = false;
 			return OK;
 
 		case ARGP_KEY_ARG:
-			if (state->arg_num >= 2) {
-				argp_usage(state);
-			}
+			if (state->arg_num >= 2) { argp_usage(state); }
 			p->args[state->arg_num] = arg;
 			return OK;
 
 		case ARGP_KEY_END:
 			assert(state->next == state->argc);
-			if (state->arg_num < 2) {
-				argp_usage(state);
-			}
+			if (state->arg_num < 2) { argp_usage(state); }
 			assert(state->arg_num == 2);
 			return OK;
 
@@ -95,56 +86,72 @@ static error_t parameter_parse(int key, char *arg, struct argp_state *state)
 	// not reached
 }
 
-////////////////////////////////////////////////////////////////////////
-// INTERFACE-SECTION
+//
+// DOC-STRINGS & OPTIONS
+//
 
-static int xmain(void);
+#define VERSION "argex 1.0"
 
-const char *argp_program_version     = BUG_ADDRESS;
-const char *argp_program_bug_address = ARGUMENTS;
+#define SUMMARY \
+"argex -- A program to demonstrate how to code command-line\
+ options and arguments."
 
-static struct parameters parameters;
+#define DESCRIPTION "This is my first argp program."
+
+#define BUG_ADDRESS "<jordinas@gmail.org>"
+
+#define OPTIONS \
+/*	 NAME       KEY  ARG        FLAGS DOC	*/\
+	{"alpha",   'a', "STRING1", 0,    "Do something with STRING1 related to the letter A"},\
+	{"bravo",   'b', "STRING2", 0,    "Do something with STRING2 related to the letter B"},\
+	{"output",  'o', "OUTFILE", 0,    "Output to OUTFILE instead of to standard output"},\
+	{"verbose", 'v', 0,         0,    "Produce verbose output"},\
+	{0,			'h', 0,         OPTION_HIDDEN}, /* help */\
+	{0,			'u', 0,         OPTION_HIDDEN},	/* usage */\
+	{0}
+
+#define ARGUMENTS	"ARG1 ARG2" // TODO: \n ...
+
+//
+// MAIN (don't edit!)
+//
+
+const char *argp_program_version     = VERSION;
+const char *argp_program_bug_address = BUG_ADDRESS;
 
 int main(int argc, char **argv)
 {
-	static const char doc[]			= SUMMARY "\v" DESCRIPTION;
-	static const char args_doc[]	= ARGUMENTS;	// "\n"...
-
-	static const struct argp_option options[] = {
-	//	 NAME       KEY  ARG        FLAGS DOC
-		{"alpha",   'a', "STRING1", 0,    "Do something with STRING1 related to the letter A"},
-		{"bravo",   'b', "STRING2", 0,    "Do something with STRING2 related to the letter B"},
-		{"output",  'o', "OUTFILE", 0,    "Output to OUTFILE instead of to standard output"},
-		{"verbose", 'v', 0,         0,    "Produce verbose output"},
-		{0,			'h', 0,         OPTION_HIDDEN}, // help
-		{0,			'u', 0,         OPTION_HIDDEN},	// usage
-		{0}
-	};
-
-	static const struct argp argp = {options, parameter_parse, args_doc, doc};
-
-	enum { flags = 0 };
-	static int i;
-
+#	define catch(x) switch (x) {case 0:break; default:goto on_error;}
+	extern int xmain(void);
+	static const char doc[] = SUMMARY "\v" DESCRIPTION;
+	static const char args_doc[] = ARGUMENTS;
+	static const struct argp_option options[] = { OPTIONS };
+	static const struct argp argp = {options, parameters_parse, args_doc, doc};
+	static const int flags = 0;
+	int i;
 	parameters.command = argv[0];
-
-	if (0!=argp_parse(&argp, argc, argv, flags, &i, &parameters)) {
-		return argp_err_exit_status;
-	}
+	catch(argp_parse(&argp, argc, argv, flags, &i, &parameters));
 	assert(i == argc);
-
 	return xmain();
+on_error:
+	return argp_err_exit_status;
+#	undef catch
 }
 
+#undef ARGUMENTS
+#undef BUG_ADDRESS
+#undef DESCRIPTION
+#undef OPTIONS
+#undef SUMMARY
+#undef VERSION
+
 ////////////////////////////////////////////////////////////////////////
-// PROGRAM-SECTION
+// PROGRAM
 ////////////////////////////////////////////////////////////////////////
 
-static int xmain(void)
+int xmain(void)
 {
-	FILE *outstream;
-
-	char waters[] =
+	static const char waters[] =
 		"a place to stay\n"
 		"enough to eat\n"
 		"somewhere old heroes shuffle safely down the street\n"
@@ -160,19 +167,20 @@ static int xmain(void)
 		"--\"the gunners dream\", Roger Waters, 1983\n";
 
 	// Where do we send output?
+	FILE *fp;
 	if (parameters.output) {
-		outstream = fopen(parameters.output, "w");
+		fp = fopen(parameters.output, "w");
 	} else {
-		outstream = stdout;
+		fp = stdout;
 	}
 	// Print argument values
-	fprintf(outstream, "Running %s\n\n", parameters.command);
-	fprintf(outstream, "alpha = %s\nbravo = %s\n\n", parameters.alpha, parameters.bravo);
-	fprintf(outstream, "ARG[1] = %s\nARG[2] = %s\n\n", parameters.args[0], parameters.args[1]);
+	fprintf(fp, "Running %s\n\n", parameters.command);
+	fprintf(fp, "alpha = %s\nbravo = %s\n\n", parameters.alpha, parameters.bravo);
+	fprintf(fp, "ARG[1] = %s\nARG[2] = %s\n\n", parameters.args[0], parameters.args[1]);
 
 	// If in verbose mode, print song stanza
 	if (parameters.verbose) {
-		fprintf(outstream, waters);
+		fprintf(fp, waters);
 	}
 	return 0;
 }
