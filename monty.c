@@ -12,8 +12,8 @@
 #include <assert.h>
 
 enum {
-	internal_error	= 0,
-	ITERATIONS		= 3000 // default iterations
+	internal_error = 0,
+	ITERATIONS     = 3000 // default iterations
 };
 
 void simulate(int iterations)
@@ -55,31 +55,30 @@ void simulate(int iterations)
 	// change door after Monty offer
 	void change_strategy(enum door contestant) {
 		enum door monty;
+		// Monty Hall chooses a door with a goat
 		if (awards[contestant] == CAR) {
-			// any door != contestant is an equal 'random' choice
 			monty = (contestant > Door1) ? Door1 : Door2;
-			assert(contestant != monty);
 		} else {
-			// Monty Hall chooses a door with a goat
 			switch (contestant) {
 				default: assert(internal_error);
 				case Door1: monty = (awards[Door2] == CAR) ? Door3 : Door2; break;
 				case Door2: monty = (awards[Door1] == CAR) ? Door3 : Door1; break;
 				case Door3: monty = (awards[Door1] == CAR) ? Door2 : Door1; break;
 			}
-			assert(contestant != monty);
-			// the contestant changes door
-			switch (contestant+monty) {
-				default: assert(internal_error);
-				case 1: contestant = Door3; break; // 0+1
-				case 2: contestant = Door2; break; // 0+2
-				case 3: contestant = Door1; break; // 1+2
-			}
-			assert(contestant != monty);
-			// a winner?
-			if (awards[contestant] == CAR) {
-				++scores.change; // win!
-			}
+		}
+		assert(awards[monty] == GOAT);
+		assert(contestant != monty);
+		// the contestant changes door
+		switch (contestant+monty) {
+			default: assert(internal_error);
+			case 1: contestant = Door3; break; // 0+1
+			case 2: contestant = Door2; break; // 0+2
+			case 3: contestant = Door1; break; // 1+2
+		}
+		assert(contestant != monty);
+		// a winner?
+		if (awards[contestant] == CAR) {
+			++scores.change; // win!
 		}
 	}
 
