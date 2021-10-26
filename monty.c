@@ -57,25 +57,23 @@ void simulate(int iterations)
 	// change door after Monty offer
 	void change_strategy(enum door contestant) {
 		static const enum door others[DOORS][2] = {
-			{ Door2, Door3 },
-			{ Door1, Door3 },
-			{ Door1, Door2 }
+			[Door1] = { Door2, Door3 },
+			[Door2] = { Door1, Door3 },
+			[Door3] = { Door1, Door2 },
 		};
 
 		// Monty Hall chooses a door with a goat
 		enum door monty;
 		if (wins(contestant)) {
 			monty = others[contestant][rand()%2];
-			assert(Door1 <= monty && monty <= Door3);
-			assert(monty != contestant);
 		} else {
 			inline enum door the_goat(const enum door a[2]) {
 				return looses(a[0]) ? a[0] : a[1];
 			}
 			monty = the_goat(others[contestant]);
-			assert(Door1 <= monty && monty <= Door3);
-			assert(monty != contestant);
 		}
+		assert(Door1 <= monty && monty <= Door3);
+		assert(monty != contestant);
 		assert(looses(monty));
 
 		// the contestant changes door
