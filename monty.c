@@ -9,8 +9,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-// uncomment next line to enable assertions
-//#define NDEBUG
+// comment next line to enable assertions
+#define NDEBUG
 #include <assert.h>
 
 enum {
