@@ -1,12 +1,13 @@
 // Monty Hall paradox
 //
-// Compiled using gcc 11.2.1
+// Compiled using gcc 11.2.1.
 //
 // https://en.wikipedia.org/wiki/Monty_Hall_problem
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 //#define NDEBUG
 #include <assert.h>
@@ -21,8 +22,13 @@ void simulate(int iterations)
 	enum award { GOAT = 'g', CAR = 'c'};
 	enum door  { Door1, Door2, Door3, DOORS };
 
+	// choose a random one
+	inline enum door one_of(enum door a, enum door b) {
+		return (rand() % 2) ? a : b;
+	}
+
 	// random door: 0 .. DOORS-1
-	enum door choose_door(void) {
+	inline enum door choose_door(void) {
 		enum door d = rand() % DOORS;
 		assert(Door1 <= d && d <= Door3);
 		return d;
@@ -31,12 +37,14 @@ void simulate(int iterations)
 	// mapping door => award
 	enum award awards[DOORS];
 
-	void init_awards(void) {
-		for (enum door d = 0; d < DOORS; ++d) {
-			awards[d] = GOAT;
-		}
-		awards[choose_door()] = CAR; // one car, two goats
+	inline void init_awards(void) {
+		// one car, two goats
+		awards[0] = awards[1] = awards[2] = GOAT;
+		awards[choose_door()] = CAR;
 	}
+
+	inline bool wins(enum door d) { return awards[d] == CAR; }
+	inline bool looses(enum door d) { return awards[d] == GOAT; }
 
 	// record scores for each strategy
 	struct {
@@ -45,11 +53,9 @@ void simulate(int iterations)
 	} scores = {0};
 
 	// stay with the first door selected
-	void stay_strategy(enum door contestant) {
+	inline void stay_strategy(enum door contestant) {
 		// a winner?
-		if (awards[contestant] == CAR) {
-			++scores.stay; // win!
-		}
+		if (wins(contestant)) { ++scores.stay; }
 	}
 
 	// change door after Monty offer
@@ -57,28 +63,43 @@ void simulate(int iterations)
 		enum door monty;
 
 		// Monty Hall chooses a door with a goat
-		if (awards[contestant] == CAR) {
-			monty = (contestant > Door1) ? Door1 : Door2;
-		} else {
+		if (wins(contestant)) {
 			switch (contestant) {
 				default: assert(internal_error);
-				case Door1: monty = (awards[Door2] == CAR) ? Door3 : Door2; break;
-				case Door2: monty = (awards[Door1] == CAR) ? Door3 : Door1; break;
-				case Door3: monty = (awards[Door1] == CAR) ? Door2 : Door1; break;
+				case Door1: monty = one_of(Door2, Door3); break;
+				case Door2: monty = one_of(Door1, Door3); break;
+				case Door3: monty = one_of(Door1, Door2); break;
 			}
+			assert(Door1 <= monty && monty <= Door3);
+			assert(monty != contestant);
+		} else {
+			assert(looses(contestant));
+			switch (contestant) {
+				default: assert(internal_error);
+				case Door1:
+					monty = wins(Door2) ? Door3 : Door2; 
+					break;
+				case Door2:
+					monty = wins(Door1) ? Door3 : Door1;
+					break;
+				case Door3:
+					monty = wins(Door1) ? Door2 : Door1;
+					break;
+			}
+			assert(Door1 <= monty && monty <= Door3);
+			assert(monty != contestant);
 		}
-		assert(awards[monty] == GOAT);
-		assert(contestant != monty);
+		assert(looses(monty));
 
 		// the contestant changes door
-		contestant = (enum door)(3 - (contestant+monty));
+		contestant = (enum door)(DOORS - (contestant + monty));
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
 
+		//assert(wins(contestant) || wins(monty));
+
 		// a winner?
-		if (awards[contestant] == CAR) {
-			++scores.change; // win!
-		}
+		if (wins(contestant)) { ++scores.change; }
 	}
 
 	// start report
@@ -92,7 +113,7 @@ void simulate(int iterations)
 		change_strategy(contestant);
 	}
 	assert(scores.change > scores.stay);
-	assert(scores.change + scores.stay == ITERATIONS);
+	//???assert(scores.change + scores.stay == ITERATIONS);
 
 	// report scores
 	printf("Stay strategy won %d times\n", scores.stay);
