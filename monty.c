@@ -9,6 +9,7 @@
 #include <time.h>
 #include <stdbool.h>
 
+// uncomment next line to enable assertions
 //#define NDEBUG
 #include <assert.h>
 
@@ -21,11 +22,6 @@ void simulate(int iterations)
 {
 	enum award { GOAT = 'g', CAR = 'c'};
 	enum door  { Door1, Door2, Door3, DOORS };
-
-	// choose a random one
-	inline enum door one_of(enum door a, enum door b) {
-		return (rand() % 2) ? a : b;
-	}
 
 	// random door: 0 .. DOORS-1
 	inline enum door choose_door(void) {
@@ -64,6 +60,9 @@ void simulate(int iterations)
 
 		// Monty Hall chooses a door with a goat
 		if (wins(contestant)) {
+			inline enum door one_of(enum door a, enum door b) {
+				return (rand() % 2) ? a : b;
+			}
 			switch (contestant) {
 				default: assert(internal_error);
 				case Door1: monty = one_of(Door2, Door3); break;
@@ -73,18 +72,15 @@ void simulate(int iterations)
 			assert(Door1 <= monty && monty <= Door3);
 			assert(monty != contestant);
 		} else {
+			inline enum door the_goat(enum door a, enum door b) {
+				return looses(a) ? a : b;
+			}
 			assert(looses(contestant));
 			switch (contestant) {
 				default: assert(internal_error);
-				case Door1:
-					monty = wins(Door2) ? Door3 : Door2; 
-					break;
-				case Door2:
-					monty = wins(Door1) ? Door3 : Door1;
-					break;
-				case Door3:
-					monty = wins(Door1) ? Door2 : Door1;
-					break;
+				case Door1: monty = the_goat(Door2, Door3); break;
+				case Door2: monty = the_goat(Door1, Door3); break;
+				case Door3: monty = the_goat(Door1, Door2); break;
 			}
 			assert(Door1 <= monty && monty <= Door3);
 			assert(monty != contestant);
@@ -95,8 +91,6 @@ void simulate(int iterations)
 		contestant = (enum door)(3 - (contestant + monty));
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
-
-		//assert(wins(contestant) || wins(monty));
 
 		// a winner?
 		if (wins(contestant)) { ++scores.change; }
