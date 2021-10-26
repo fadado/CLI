@@ -92,7 +92,7 @@ void simulate(int iterations)
 		assert(looses(monty));
 
 		// the contestant changes door
-		contestant = (enum door)(DOORS - (contestant + monty));
+		contestant = (enum door)(3 - (contestant + monty));
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
 
@@ -113,7 +113,7 @@ void simulate(int iterations)
 		change_strategy(contestant);
 	}
 	assert(scores.change > scores.stay);
-	//???assert(scores.change + scores.stay == ITERATIONS);
+	assert(scores.change + scores.stay == iterations);
 
 	// report scores
 	printf("Stay strategy won %d times\n", scores.stay);
