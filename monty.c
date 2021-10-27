@@ -20,18 +20,18 @@ enum {
 
 void simulate(int iterations)
 {
-	enum award { GOAT = 'g', CAR = 'c'};
-	enum door  { Door1, Door2, Door3, DOORS };
+	// 3 doors
+	enum door { Door1, Door2, Door3, DOORS };
 
-	// random door: 0 .. DOORS-1
 	inline enum door choose_door(void) {
 		enum door d = (enum door)(rand() % DOORS);
 		assert(Door1 <= d && d <= Door3);
-		return d;
+		return d; // random door
 	}
 
 	// mapping door => award
-	enum award awards[DOORS];
+	enum award { GOAT='g', CAR='c'}
+	awards[DOORS];
 
 	inline void init_awards(void) {
 		// one car, two goats
@@ -50,13 +50,15 @@ void simulate(int iterations)
 
 	// stay with the first door selected
 	inline void stay_strategy(enum door contestant) {
-		// a winner?
+		// open the contestant door
 		if (wins(contestant)) { ++scores.stay; }
 	}
 
 	// change door after Monty offer
 	void change_strategy(enum door contestant) {
-		static const enum door others[DOORS][DOORS-1] = {
+		// `contestant` is the door the contestant choosed
+		// `closed[][]` maps a door to the two related free doors
+		static const enum door closed[DOORS][DOORS-1] = {
 			[Door1] = { Door2, Door3 },
 			[Door2] = { Door1, Door3 },
 			[Door3] = { Door1, Door2 },
@@ -65,11 +67,13 @@ void simulate(int iterations)
 		// Monty Hall chooses a door with a goat
 		enum door monty;
 		if (wins(contestant)) {
-			monty = others[contestant][rand()%2];
+			// the two free doors have a goat: any is ok.
+			monty = closed[contestant][rand()%2];
 		} else {
-			monty = looses(others[contestant][0])
-					? others[contestant][0]
-					: others[contestant][1] ;
+			// select the free door with a goat
+			monty = looses(closed[contestant][0])
+					? closed[contestant][0]
+					: closed[contestant][1] ;
 		}
 		assert(Door1 <= monty && monty <= Door3);
 		assert(monty != contestant);
@@ -80,7 +84,7 @@ void simulate(int iterations)
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
 
-		// a winner?
+		// open the contestant door
 		if (wins(contestant)) { ++scores.change; }
 	}
 
@@ -90,7 +94,9 @@ void simulate(int iterations)
 	// simulate
 	for (register int i = 0; i < iterations; ++i) {
 		init_awards();
+		// the contestant chooses a door
 		enum door contestant = choose_door();
+		// try each strategy
 		stay_strategy(contestant);
 		change_strategy(contestant);
 	}
