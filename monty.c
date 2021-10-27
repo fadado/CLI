@@ -13,29 +13,30 @@
 #define NDEBUG
 #include <assert.h>
 
-enum {
-	internal_error = 0,
-	ITERATIONS     = 3000 // default iterations
-};
+// default iterations; changeable by program argument
+enum { ITERATIONS=3000 };
 
-void simulate(int iterations)
+// play many times the game and record scores for the two strategies
+static void simulate(unsigned iterations)
 {
-	// 3 doors
+	// ordinal type for the three doors
 	enum door { Door1, Door2, Door3, DOORS };
 
-	inline enum door choose_door(void) {
-		enum door d = (enum door)(rand() % DOORS);
+	enum door choose_door(void) {
+		enum door d = (rand() % DOORS);
 		assert(Door1 <= d && d <= Door3);
 		return d; // random door
 	}
 
-	// mapping door => award
-	enum award { GOAT='g', CAR='c'}
-	awards[DOORS];
+	// nominal type for the two awards
+	enum award { GOAT='g', CAR='c' };
 
-	inline void init_awards(void) {
+	// mapping door => award
+	enum award awards[DOORS];
+
+	void init_awards(void) {
 		// one car, two goats
-		awards[0] = awards[1] = awards[2] = GOAT;
+		awards[Door1] = awards[Door2] = awards[Door3] = GOAT;
 		awards[choose_door()] = CAR;
 	}
 
@@ -49,7 +50,7 @@ void simulate(int iterations)
 	} scores = {0};
 
 	// stay with the first door selected
-	inline void stay_strategy(enum door contestant) {
+	void stay_strategy(enum door contestant) {
 		// open the contestant door
 		if (wins(contestant)) { ++scores.stay; }
 	}
@@ -71,16 +72,15 @@ void simulate(int iterations)
 			monty = closed[contestant][rand()%2];
 		} else {
 			// select the free door with a goat
-			monty = looses(closed[contestant][0])
-					? closed[contestant][0]
-					: closed[contestant][1] ;
+			enum door d = closed[contestant][0];
+			monty = looses(d) ? d : closed[contestant][1];
 		}
 		assert(Door1 <= monty && monty <= Door3);
 		assert(monty != contestant);
 		assert(looses(monty));
 
 		// the contestant changes door
-		contestant = (enum door)(DOORS - (contestant + monty));
+		contestant = (enum door)(DOORS-(contestant+monty));
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
 
@@ -92,7 +92,7 @@ void simulate(int iterations)
 	printf("N = %d\n", iterations);
 
 	// simulate
-	for (register int i = 0; i < iterations; ++i) {
+	for (unsigned i = 0; i < iterations; ++i) {
 		init_awards();
 		// the contestant chooses a door
 		enum door contestant = choose_door();
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 
 	// do it!
-	simulate(n);
+	simulate((unsigned)n);
 
 	return 0;
 }
