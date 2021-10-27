@@ -1,6 +1,6 @@
 // Monty Hall paradox
 //
-// Compiled using gcc 11.2.1.
+// Compiled using gcc 11.2.1
 //
 // https://en.wikipedia.org/wiki/Monty_Hall_problem
 
@@ -25,7 +25,7 @@ void simulate(int iterations)
 
 	// random door: 0 .. DOORS-1
 	inline enum door choose_door(void) {
-		enum door d = rand() % DOORS;
+		enum door d = (enum door)(rand() % DOORS);
 		assert(Door1 <= d && d <= Door3);
 		return d;
 	}
@@ -56,7 +56,7 @@ void simulate(int iterations)
 
 	// change door after Monty offer
 	void change_strategy(enum door contestant) {
-		static const enum door others[DOORS][2] = {
+		static const enum door others[DOORS][DOORS-1] = {
 			[Door1] = { Door2, Door3 },
 			[Door2] = { Door1, Door3 },
 			[Door3] = { Door1, Door2 },
@@ -67,17 +67,16 @@ void simulate(int iterations)
 		if (wins(contestant)) {
 			monty = others[contestant][rand()%2];
 		} else {
-			inline enum door the_goat(const enum door a[2]) {
-				return looses(a[0]) ? a[0] : a[1];
-			}
-			monty = the_goat(others[contestant]);
+			monty = looses(others[contestant][0])
+					? others[contestant][0]
+					: others[contestant][1] ;
 		}
 		assert(Door1 <= monty && monty <= Door3);
 		assert(monty != contestant);
 		assert(looses(monty));
 
 		// the contestant changes door
-		contestant = (enum door)(3 - (contestant + monty));
+		contestant = (enum door)(DOORS - (contestant + monty));
 		assert(Door1 <= contestant && contestant <= Door3);
 		assert(contestant != monty);
 
@@ -89,7 +88,7 @@ void simulate(int iterations)
 	printf("N = %d\n", iterations);
 
 	// simulate
-	for (int i = 0; i < iterations; ++i) {
+	for (register int i = 0; i < iterations; ++i) {
 		init_awards();
 		enum door contestant = choose_door();
 		stay_strategy(contestant);
